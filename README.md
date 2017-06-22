@@ -1,4 +1,4 @@
 Ho caricato il markdown perchè jupyter protestava...
-manca:
+manca:  
 -somma dei vettori per indice
--pivot
+
