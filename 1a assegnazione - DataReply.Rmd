@@ -1,6 +1,6 @@
 ---
 title: "Refactoring DataReply"
-author: "Luca Ganugi"
+author: "Luca Ganugi, Vincenzo Lio, Matteo Frizzi"
 date: "21 giugno 2017"
 output: html_document
 ---
@@ -19,6 +19,8 @@ library(bizdays)
 library(lubridate)
 library(timeDate)
 library(htmltab)
+library(reshape2)
+library(httr)
 ```
 ```{r}
 number = c(1,2,3)
@@ -73,7 +75,7 @@ setkey(datatable, State_Code,County_Code)
 head(datatable)
 ```
 ```{r}
-print("Percentage of mortages in each census tract insured by FHA")
+#Percentage of mortages in each census tract insured by FHA
 summary(df$PCT_AMT_FHA)
 summary(df)
 ```
@@ -419,24 +421,24 @@ cbind(US = format(tempdate, tz="America/New_York"), UK = format(tempdate, tz = "
 
 
 
-#Multi-indices, stacking, and pivot tables
+#Multi-indices, stacking, and pivot tables  
+Creo group1, raggruppando per State_Code e County_Code la tabella df_joined e sommo i campi NUM_ALL e NUM_FHA:  
 ```{r}
 group1 = group_by(df_joined, State_Code, County_Code)
 group2 = summarise(group1, NUM_ALL = sum(NUM_ALL), NUM_FHA = sum(NUM_FHA))
 head(group2)
 ```
 
+E' possibile usare come indice State_Code e come colonna County_Code ed avere come valori di incrocio NUM_ALL:  
+```{r}
+unstacked = dcast(group2, State_Code ~ County_Code, value.var = "NUM_ALL")
+head(unstacked[,1:7])
+```
 
-
-#pd.pivot_table(df, index='State_Code', columns='County_Code',
-#               values=['NUM_ALL', 'NUM_FHA'], aggfunc=np.sum).head()
-
-
-
+  
 #Seconda parte
 ```{r}
-library(httr)
-
+#Creo la funzione geocode, che prende in carico un address ed esegue una query sul sito Openstreetmap, restituendo latitudine e longitudine.
 geocode <- function(address){
   parameters = list(q=address,addressdetails=1,format="json")
   endpointUrl = "http://nominatim.openstreetmap.org/search"
@@ -449,6 +451,7 @@ address<-"1600 Pennsylvania Avenue, Washington, DC"
 response = geocode(address)
 response
 
+#La funzione weather_at_address invece sfrutta le coordinate generate dalla precedente funzione per restituire il meteo di un particolare indirizzo.
 weather_at_address = function (address) {
   response = geocode(address)
   parameters = list(lat=response[1],lon=response[2],FcstType="json")
